@@ -175,7 +175,7 @@
   function sfxWin(){ Audio.chord([660,880,990],0.3,'sine',0.05); }
 
   // ===== Public Leaderboard (SAFE) =====
-  const API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxn78c9SBj5nVxcIIWMnD7pnWUL1WZILujhQwldzbkti8OEsO6luMpaH_WwUgXq-ky1Og/exec';
   const NICK_KEY = 'sm_nick_v1';
   function validApi(){ return /^https?:\/\//.test(API_URL); }
   async function fetchLB(limit=10){ if(!validApi()||typeof fetch!=='function') return []; try{ const res=await fetch(`${API_URL}?action=list&limit=${limit}`); const data=await res.json(); return (data&&data.ok&&Array.isArray(data.list))?data.list:[]; }catch(e){ console.warn('fetchLB failed',e); return []; } }
