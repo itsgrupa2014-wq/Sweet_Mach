@@ -129,6 +129,7 @@
     body{ align-items:flex-start }
   }
 
+  /* Leaderboard styles */
   .leader{ margin-top:12px; background:#0d1328; border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:12px; }
   .leader h3{ margin:0 0 8px; font-size:14px; letter-spacing:.2px }
   .leader .row{ display:flex; justify-content:space-between; gap:8px; padding:6px 8px; border-radius:8px; }
@@ -222,11 +223,14 @@
   function sfxSpecial(){ Audio.chord([320,480,640],0.16,'square',0.035); }
   function sfxWin(){ Audio.chord([660,880,990],0.3,'sine',0.05); }
 
-  // ===== Public Leaderboard (Google Apps Script backend) =====
-  // 1) Set this to your deployed Web App URL from Apps Script (ends with /exec)
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxn78c9SBj5nVxcIIWMnD7pnWUL1WZILujhQwldzbkti8OEsO6luMpaH_WwUgXq-ky1Og/exec';
+  // ===== Public Leaderboard (Google Apps Script backend) — SAFE GUARDS =====
+  // Put your deployed Web App URL (ends with /exec). If not set, leaderboard silently falls back.
+  const API_URL = (typeof window !== 'undefined' && window.API_URL_OVERRIDE) || 'https://script.google.com/macros/s/AKfycbxn78c9SBj5nVxcIIWMnD7pnWUL1WZILujhQwldzbkti8OEsO6luMpaH_WwUgXq-ky1Og/exec';
+  const NICK_KEY = 'sm_nick_v1';
+  function validApi(){ return /^https?:\/\//.test(API_URL); }
 
   async function fetchLB(limit=10){
+    if(!validApi() || typeof fetch !== 'function') return [];
     try{
       const res = await fetch(`${API_URL}?action=list&limit=${limit}`, { method:'GET' });
       const data = await res.json();
@@ -234,20 +238,20 @@
     }catch(e){ console.warn('fetchLB failed', e); return []; }
   }
   async function postScore(name, pts){
+    if(!validApi() || typeof fetch !== 'function') return {ok:false, offline:true};
     try{
       const body = new URLSearchParams({ action:'add', name:name, score:String(pts) });
       const res = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body });
       return await res.json();
     }catch(e){ console.warn('postScore failed', e); return {ok:false}; }
   }
-  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[m])); }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
   async function renderLB(){
     const listEl = document.getElementById('lbList'); if(!listEl) return;
     const list = await fetchLB(10);
-    if(!list || list.length===0){ listEl.innerHTML = '<div class="empty">No scores yet. Finish a game to submit your score.</div>'; return; }
+    if(!list || list.length===0){ listEl.innerHTML = '<div class="empty">No scores yet or leaderboard offline.</div>'; return; }
     listEl.innerHTML = list.map((r,i)=>`<div class="row"><span class="name">${i+1}. ${escapeHtml(r.name)}</span><span class="pts">${r.score}</span></div>`).join('');
   }
-  const NICK_KEY = 'sm_nick_v1';
 
 
   const inBounds = (r,c)=> r>=0 && r<ROWS && c>=0 && c<COLS;
